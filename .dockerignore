@@ -1,0 +1,7 @@
+.git
+.idea
+.env
+*.log
+/tmp
+survey_results.xls
+api

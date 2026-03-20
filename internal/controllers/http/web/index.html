@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>VK Research Mini App</title>
+  <link rel="stylesheet" href="/miniapp/styles.css">
+</head>
+<body>
+  <div class="bg-shape"></div>
+  <main class="page">
+    <section class="card hero">
+      <p class="badge">VK Mini Apps Demo</p>
+      <h1>Сервис количественных исследований</h1>
+      <p class="subtitle">Пройдите опрос по публичной ссылке и отправьте ответы без регистрации.</p>
+    </section>
+
+    <section class="card form-card">
+      <label for="token">Публичный токен опроса</label>
+      <div class="row">
+        <input id="token" type="text" placeholder="Введите public_token" />
+        <button id="loadBtn">Загрузить</button>
+      </div>
+      <p class="hint">Токен можно взять из поля <code>public_link</code> после создания опроса в кабинете.</p>
+      <p id="status" class="status"></p>
+    </section>
+
+    <section id="surveySection" class="card hidden">
+      <h2 id="surveyTitle"></h2>
+      <p id="surveyDescription" class="subtitle"></p>
+      <form id="surveyForm"></form>
+      <div class="actions">
+        <button id="saveBtn" class="ghost">Сохранить прогресс</button>
+        <button id="submitBtn">Отправить ответы</button>
+      </div>
+    </section>
+  </main>
+  <script src="/miniapp/app.js"></script>
+</body>
+</html>
