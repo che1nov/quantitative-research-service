@@ -88,6 +88,39 @@ func (m *ExternalAPIMiddleware) Wrap(next http.Handler) http.Handler {
 	})
 }
 
+// CORSMiddleware добавляет CORS заголовки для браузерных запросов.
+type CORSMiddleware struct {
+	allowOrigin string
+	log         logger.Logger
+}
+
+func NewCORSMiddleware(allowOrigin string, log logger.Logger) *CORSMiddleware {
+	return &CORSMiddleware{allowOrigin: allowOrigin, log: log}
+}
+
+// Wrap выставляет CORS заголовки и обрабатывает preflight.
+func (m *CORSMiddleware) Wrap(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := m.allowOrigin
+		if origin == "" {
+			origin = "*"
+		}
+
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization,X-CSRF-Token,X-Internal-User,X-External-Token")
+		w.Header().Set("Access-Control-Max-Age", "600")
+
+		if r.Method == http.MethodOptions {
+			m.log.DebugContext(r.Context(), "CORS preflight обработан", "path", r.URL.Path)
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 // SecurityHeadersMiddleware выставляет базовые заголовки защиты.
 type SecurityHeadersMiddleware struct {
 	log logger.Logger

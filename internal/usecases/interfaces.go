@@ -31,5 +31,16 @@ type XLSExporter interface {
 	BuildSurveyResultsXLS(ctx context.Context, survey domain.Survey, sessions []domain.AnswerSession) ([]byte, error)
 }
 
+// UserStorage описывает атомарные операции с пользователями.
+type UserStorage interface {
+	GetUserByVKID(ctx context.Context, vkID int64) (domain.User, error)
+	CreateUser(ctx context.Context, user domain.User) error
+}
+
+// JWTSigner создает JWT токен для пользователя.
+type JWTSigner interface {
+	SignUserToken(ctx context.Context, user domain.User) (string, error)
+}
+
 // AppLogger описывает логгер use case слоя.
 type AppLogger = logger.Logger

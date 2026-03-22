@@ -15,6 +15,8 @@ type SurveyAdapter struct {
 	surveys  map[string]domain.Survey
 	byToken  map[string]string
 	sessions map[string]domain.AnswerSession
+	users    map[string]domain.User
+	byVKID   map[int64]string
 	log      logger.Logger
 }
 
@@ -23,6 +25,8 @@ func NewSurveyAdapter(log logger.Logger) *SurveyAdapter {
 		surveys:  map[string]domain.Survey{},
 		byToken:  map[string]string{},
 		sessions: map[string]domain.AnswerSession{},
+		users:    map[string]domain.User{},
+		byVKID:   map[int64]string{},
 		log:      log,
 	}
 }
@@ -165,4 +169,35 @@ func (a *SurveyAdapter) ListCompletedSessionsBySurvey(ctx context.Context, surve
 	}
 	a.log.DebugContext(ctx, "Список завершенных сессий получен", "survey_id", surveyID, "count", len(result))
 	return result, nil
+}
+
+// GetUserByVKID получает пользователя по VK ID.
+func (a *SurveyAdapter) GetUserByVKID(ctx context.Context, vkID int64) (domain.User, error) {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	userID, ok := a.byVKID[vkID]
+	if !ok {
+		a.log.WarnContext(ctx, "Пользователь по vk id не найден", "vk_id", vkID)
+		return domain.User{}, domain.ErrUserNotFound
+	}
+	user, ok := a.users[userID]
+	if !ok {
+		a.log.WarnContext(ctx, "Пользователь отсутствует в хранилище", "user_id", userID)
+		return domain.User{}, domain.ErrUserNotFound
+	}
+
+	a.log.DebugContext(ctx, "Пользователь получен по vk id", "vk_id", vkID, "user_id", user.ID)
+	return user, nil
+}
+
+// CreateUser создает пользователя в памяти.
+func (a *SurveyAdapter) CreateUser(ctx context.Context, user domain.User) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.users[user.ID] = user
+	a.byVKID[user.VKID] = user.ID
+	a.log.DebugContext(ctx, "Пользователь сохранен в памяти", "user_id", user.ID, "vk_id", user.VKID)
+	return nil
 }

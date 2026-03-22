@@ -12,6 +12,7 @@ func NewRouter(
 	auth *AuthMiddleware,
 	csrf *CSRFMiddleware,
 	external *ExternalAPIMiddleware,
+	cors *CORSMiddleware,
 	security *SecurityHeadersMiddleware,
 ) http.Handler {
 	mux := http.NewServeMux()
@@ -22,6 +23,7 @@ func NewRouter(
 	})
 	mux.HandleFunc("GET /miniapp", miniApp.Index)
 	mux.HandleFunc("GET /miniapp/", miniApp.Assets)
+	mux.HandleFunc("POST /auth/vk", handler.AuthenticateVK)
 
 	mux.HandleFunc("GET /api/cabinet/surveys", handler.ListSurveys)
 	mux.HandleFunc("POST /api/cabinet/surveys", handler.CreateSurvey)
@@ -57,6 +59,6 @@ func NewRouter(
 		http.NotFound(w, r)
 	})
 
-	wrapped := security.Wrap(external.Wrap(auth.WrapInternal(csrf.Wrap(mux))))
+	wrapped := security.Wrap(cors.Wrap(external.Wrap(auth.WrapInternal(csrf.Wrap(mux)))))
 	return wrapped
 }

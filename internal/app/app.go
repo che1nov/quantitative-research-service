@@ -24,9 +24,11 @@ func New(cfg config.Config) (*App, error) {
 
 	storage := memory.NewSurveyAdapter(log.With("layer", "adapter", "component", "memory"))
 	tokens := security.NewTokenGenerator(log.With("layer", "adapter", "component", "token_generator"))
+	jwtSigner := security.NewJWTSigner(cfg.JWTSecret, log.With("layer", "adapter", "component", "jwt_signer"))
 	xlsExporter := exportadapter.NewXLSExporter(log.With("layer", "adapter", "component", "xls"))
 
 	publicURL := cfg.PublicBaseURL
+	authenticateVKUC := usecases.NewAuthenticateVKUseCase(storage, tokens, jwtSigner, log.With("usecase", "authenticate_vk"))
 	createSurveyUC := usecases.NewCreateSurveyUseCase(storage, tokens, log.With("usecase", "create_survey"), publicURL)
 	updateSurveyUC := usecases.NewUpdateSurveyUseCase(storage, log.With("usecase", "update_survey"), publicURL)
 	deleteSurveyUC := usecases.NewDeleteSurveyUseCase(storage, log.With("usecase", "delete_survey"))
@@ -39,6 +41,7 @@ func New(cfg config.Config) (*App, error) {
 	exportResultsUC := usecases.NewExportResultsUseCase(storage, xlsExporter, log.With("usecase", "export_results"))
 
 	handler := httpcontroller.NewSurveyHandler(
+		authenticateVKUC,
 		createSurveyUC,
 		updateSurveyUC,
 		deleteSurveyUC,
@@ -59,8 +62,9 @@ func New(cfg config.Config) (*App, error) {
 	authMiddleware := httpcontroller.NewAuthMiddleware(log.With("layer", "middleware", "type", "auth"))
 	csrfMiddleware := httpcontroller.NewCSRFMiddleware(cfg.CSRFToken, log.With("layer", "middleware", "type", "csrf"))
 	externalMiddleware := httpcontroller.NewExternalAPIMiddleware(cfg.ExternalAPIToken, log.With("layer", "middleware", "type", "external_api"))
+	corsMiddleware := httpcontroller.NewCORSMiddleware(cfg.CORSAllowOrigin, log.With("layer", "middleware", "type", "cors"))
 	securityHeadersMiddleware := httpcontroller.NewSecurityHeadersMiddleware(log.With("layer", "middleware", "type", "security_headers"))
-	router := httpcontroller.NewRouter(handler, miniAppHandler, authMiddleware, csrfMiddleware, externalMiddleware, securityHeadersMiddleware)
+	router := httpcontroller.NewRouter(handler, miniAppHandler, authMiddleware, csrfMiddleware, externalMiddleware, corsMiddleware, securityHeadersMiddleware)
 
 	server := httpserver.New(":"+cfg.Port, router, log.With("layer", "http_server"))
 	log.Info("Приложение инициализировано")

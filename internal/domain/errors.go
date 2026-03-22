@@ -8,4 +8,6 @@ var (
 	ErrInvalidQuestion    = errors.New("некорректный вопрос")
 	ErrInvalidSurveyTitle = errors.New("название опроса не может быть пустым")
 	ErrInvalidToken       = errors.New("некорректная ссылка опроса")
+	ErrInvalidVKID        = errors.New("некорректный vk id")
+	ErrUserNotFound       = errors.New("пользователь не найден")
 )

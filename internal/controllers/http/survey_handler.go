@@ -14,20 +14,22 @@ import (
 
 // SurveyHandler объединяет обработчики endpoint сервиса опросов.
 type SurveyHandler struct {
-	createSurvey *usecases.CreateSurveyUseCase
-	updateSurvey *usecases.UpdateSurveyUseCase
-	deleteSurvey *usecases.DeleteSurveyUseCase
-	listSurveys  *usecases.ListSurveysUseCase
-	getPublic    *usecases.GetPublicSurveyUseCase
-	startSession *usecases.StartSessionUseCase
-	saveProgress *usecases.SaveProgressUseCase
-	submit       *usecases.SubmitAnswersUseCase
-	getResults   *usecases.GetResultsUseCase
-	export       *usecases.ExportResultsUseCase
-	log          logger.Logger
+	authenticateVK *usecases.AuthenticateVKUseCase
+	createSurvey   *usecases.CreateSurveyUseCase
+	updateSurvey   *usecases.UpdateSurveyUseCase
+	deleteSurvey   *usecases.DeleteSurveyUseCase
+	listSurveys    *usecases.ListSurveysUseCase
+	getPublic      *usecases.GetPublicSurveyUseCase
+	startSession   *usecases.StartSessionUseCase
+	saveProgress   *usecases.SaveProgressUseCase
+	submit         *usecases.SubmitAnswersUseCase
+	getResults     *usecases.GetResultsUseCase
+	export         *usecases.ExportResultsUseCase
+	log            logger.Logger
 }
 
 func NewSurveyHandler(
+	authenticateVK *usecases.AuthenticateVKUseCase,
 	createSurvey *usecases.CreateSurveyUseCase,
 	updateSurvey *usecases.UpdateSurveyUseCase,
 	deleteSurvey *usecases.DeleteSurveyUseCase,
@@ -41,18 +43,39 @@ func NewSurveyHandler(
 	log logger.Logger,
 ) *SurveyHandler {
 	return &SurveyHandler{
-		createSurvey: createSurvey,
-		updateSurvey: updateSurvey,
-		deleteSurvey: deleteSurvey,
-		listSurveys:  listSurveys,
-		getPublic:    getPublic,
-		startSession: startSession,
-		saveProgress: saveProgress,
-		submit:       submit,
-		getResults:   getResults,
-		export:       export,
-		log:          log,
+		authenticateVK: authenticateVK,
+		createSurvey:   createSurvey,
+		updateSurvey:   updateSurvey,
+		deleteSurvey:   deleteSurvey,
+		listSurveys:    listSurveys,
+		getPublic:      getPublic,
+		startSession:   startSession,
+		saveProgress:   saveProgress,
+		submit:         submit,
+		getResults:     getResults,
+		export:         export,
+		log:            log,
 	}
+}
+
+// AuthenticateVK выполняет вход пользователя через VK Bridge.
+func (h *SurveyHandler) AuthenticateVK(w http.ResponseWriter, r *http.Request) {
+	h.log.InfoContext(r.Context(), "HTTP запрос AuthenticateVK")
+	var input dto.AuthenticateVKInput
+	if err := decodeJSON(r, &input); err != nil {
+		h.log.WarnContext(r.Context(), "Ошибка декодирования AuthenticateVK", "error", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	output, err := h.authenticateVK.Execute(r.Context(), input)
+	if err != nil {
+		h.writeDomainError(w, err)
+		return
+	}
+
+	h.log.InfoContext(r.Context(), "HTTP AuthenticateVK выполнен", "user_id", output.UserID, "vk_id", output.VKID)
+	writeJSON(w, http.StatusOK, output)
 }
 
 // CreateSurvey создает новый опрос.
@@ -246,7 +269,11 @@ func (h *SurveyHandler) writeDomainError(w http.ResponseWriter, err error) {
 		http.Error(w, err.Error(), http.StatusNotFound)
 	case errors.Is(err, domain.ErrSessionNotFound):
 		http.Error(w, err.Error(), http.StatusNotFound)
+	case errors.Is(err, domain.ErrUserNotFound):
+		http.Error(w, err.Error(), http.StatusNotFound)
 	case errors.Is(err, domain.ErrInvalidQuestion), errors.Is(err, domain.ErrInvalidToken), errors.Is(err, domain.ErrInvalidSurveyTitle):
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	case errors.Is(err, domain.ErrInvalidVKID):
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	default:
 		h.log.Error("Внутренняя ошибка обработчика", "error", err)

@@ -42,6 +42,8 @@ go run ./cmd/api
 - `CSRF_TOKEN` (по умолчанию `dev-csrf-token`)
 - `EXTERNAL_API_TOKEN` (по умолчанию `dev-external-token`)
 - `PUBLIC_BASE_URL` (в проде укажите публичный https URL приложения, например `https://your-app.example.com`)
+- `CORS_ALLOW_ORIGIN` (например `*` или конкретный домен фронтенда)
+- `JWT_SECRET` (секрет подписи JWT для `/auth/vk`)
 - `VK_APP_ID` (числовой идентификатор приложения, например `54495216`)
 - `VK_SERVICE_TOKEN`
 - `VK_SECURE_KEY`
@@ -131,6 +133,14 @@ curl http://localhost:8080/api/cabinet/surveys/<survey_id>/export \
 ```bash
 curl http://localhost:8080/api/external/surveys/<survey_id>/results \
   -H 'X-External-Token: dev-external-token'
+```
+
+### 9. Аутентификация через VK Bridge
+
+```bash
+curl -X POST http://localhost:8080/auth/vk \
+  -H 'Content-Type: application/json' \
+  -d '{"vk_id":123456789}'
 ```
 
 ## Тесты
