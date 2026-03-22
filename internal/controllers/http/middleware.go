@@ -23,6 +23,11 @@ func (m *AuthMiddleware) WrapInternal(next http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 			return
 		}
+		if strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+			m.log.DebugContext(r.Context(), "Доступ в кабинет по JWT", "path", r.URL.Path)
+			next.ServeHTTP(w, r)
+			return
+		}
 		if r.Header.Get("X-Internal-User") == "" {
 			m.log.WarnContext(r.Context(), "Доступ в кабинет без внутреннего пользователя")
 			http.Error(w, "неавторизован", http.StatusUnauthorized)
@@ -46,6 +51,11 @@ func NewCSRFMiddleware(token string, log logger.Logger) *CSRFMiddleware {
 func (m *CSRFMiddleware) Wrap(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(r.URL.Path, "/api/cabinet") {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if strings.HasPrefix(r.Header.Get("Authorization"), "Bearer ") {
+			m.log.DebugContext(r.Context(), "CSRF проверка пропущена для JWT запроса", "path", r.URL.Path)
 			next.ServeHTTP(w, r)
 			return
 		}

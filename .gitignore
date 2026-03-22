@@ -10,3 +10,5 @@ quantitative-research-service/node_modules/
 quantitative-research-service/build/
 quantitative-research-service/build.zip
 quantitative-research-service/.env
+quantitative-research-service/.env.*
+!quantitative-research-service/.env.production.example

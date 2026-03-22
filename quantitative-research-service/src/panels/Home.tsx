@@ -45,7 +45,7 @@ export const Home: FC<HomeProps> = ({ id, fetchedUser, authStatus }) => {
 
       <Group header={<Header size="s">Действия</Header>}>
         <Div>
-          <Button stretched size="l" mode="primary">
+          <Button stretched size="l" mode="primary" onClick={() => routeNavigator.push('surveys')}>
             Создать опрос
           </Button>
         </Div>
